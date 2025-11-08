@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         VIRTUAL_ENV = 'venv'
+        PYTHON_PATH = 'C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python313\\python.exe'
     }
 
     stages {
@@ -13,7 +14,7 @@ pipeline {
                     // For Windows
                     bat """
                         if not exist ${VIRTUAL_ENV} (
-                            python -m venv ${VIRTUAL_ENV}
+                            "${PYTHON_PATH}" -m venv ${VIRTUAL_ENV}
                         )
                         call ${VIRTUAL_ENV}\\Scripts\\activate.bat && pip install -r requirements.txt
                     """
