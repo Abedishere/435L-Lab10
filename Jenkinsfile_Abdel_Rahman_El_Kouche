@@ -1,0 +1,102 @@
+pipeline {
+    agent any
+
+    environment {
+        VIRTUAL_ENV = 'venv'
+    }
+
+    stages {
+        stage('Setup') {
+            steps {
+                script {
+                    echo "Setting up Python virtual environment..."
+                    // For Windows
+                    bat """
+                        if not exist ${VIRTUAL_ENV} (
+                            python -m venv ${VIRTUAL_ENV}
+                        )
+                        call ${VIRTUAL_ENV}\\Scripts\\activate.bat && pip install -r requirements.txt
+                    """
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                script {
+                    echo "Running flake8 linting..."
+                    bat """
+                        call ${VIRTUAL_ENV}\\Scripts\\activate.bat && flake8 app.py --max-line-length=100
+                    """
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    echo "Running unit tests with pytest..."
+                    bat """
+                        call ${VIRTUAL_ENV}\\Scripts\\activate.bat && pytest tests/ -v
+                    """
+                }
+            }
+        }
+
+        stage('Coverage') {
+            steps {
+                script {
+                    echo "Running code coverage analysis..."
+                    bat """
+                        call ${VIRTUAL_ENV}\\Scripts\\activate.bat && coverage run -m pytest tests/
+                        call ${VIRTUAL_ENV}\\Scripts\\activate.bat && coverage report -m
+                        call ${VIRTUAL_ENV}\\Scripts\\activate.bat && coverage html
+                    """
+                    echo "Coverage report generated in htmlcov/index.html"
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                script {
+                    echo "Running security scan with bandit..."
+                    bat """
+                        call ${VIRTUAL_ENV}\\Scripts\\activate.bat && bandit -r app.py -f txt -o bandit-report.txt || exit 0
+                        call ${VIRTUAL_ENV}\\Scripts\\activate.bat && bandit -r app.py
+                    """
+                    echo "Security scan completed. Report saved to bandit-report.txt"
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    echo "Deploying application..."
+                    // Basic deployment simulation - copy files to deployment directory
+                    bat """
+                        if not exist deploy mkdir deploy
+                        copy app.py deploy\\
+                        echo Deployment completed successfully!
+                    """
+                    echo "Application deployed to ./deploy directory"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully!"
+            echo "All stages passed: Setup, Lint, Test, Coverage, Security Scan, and Deploy"
+        }
+        failure {
+            echo "Pipeline failed. Please check the logs for details."
+        }
+        always {
+            echo "Cleaning up workspace..."
+            cleanWs()
+        }
+    }
+}
